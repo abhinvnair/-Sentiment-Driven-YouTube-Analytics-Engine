@@ -1,0 +1,62 @@
+from textblob import TextBlob
+from langdetect import detect
+import pandas as pd
+import openpyxl
+
+# Define a function to categorize sentiment scores into ratings
+def get_rating(sentiment_score):
+    if sentiment_score > 0:
+        return 'Positive'
+    elif sentiment_score < 0:
+        return 'Negative'
+    else:
+        return 'Neutral'
+
+# Read data from web_scraping.xlsx
+xlsx_filename = "C:\\Users\\athar\\OneDrive\\Documents\\web_scraping.xlsx"
+
+# Read Excel file using pandas
+df = pd.read_excel(xlsx_filename, header=None)  # Specify no header
+
+# Perform sentiment analysis and language detection
+sentiments = []
+ratings = []
+for comment in df.iloc[:, 0]:  # Assuming comments are in the first column
+    try:
+        # Convert comment to string if it's not already a string
+        comment = str(comment)
+        
+        # Detect the language of the comment
+        detected_language = detect(comment)
+    except:
+        detected_language = 'en'  # Fallback to English if language detection fails
+    
+    if detected_language == 'en':
+        # Sentiment analysis for English comments
+        blob = TextBlob(comment)
+        sentiment_score = blob.sentiment.polarity
+
+        # Get the sentiment rating
+        rating = get_rating(sentiment_score)
+
+        # Append sentiment score and rating to lists
+        sentiments.append(sentiment_score)
+        ratings.append(rating)
+
+# Create dataset
+dataset = list(zip(df.iloc[:, 0], sentiments, ratings))  # Include ratings in the dataset
+print("Number of comments in the dataset:", len(dataset))
+
+# Export dataset to Excel file (.xlsx)
+output_xlsx_filename = "C:\\Users\\athar\\OneDrive\\Documents\\web_scraping_sentiment_analysis.xlsx"
+
+wb = openpyxl.Workbook()
+ws = wb.active
+
+ws.append(['Comment', 'Sentiment', 'Rating'])  # Include 'Rating' in the header row
+for row in dataset:
+    ws.append(row)
+
+wb.save(output_xlsx_filename)
+
+print("Dataset exported successfully to", output_xlsx_filename)
